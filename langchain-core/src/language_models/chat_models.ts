@@ -33,7 +33,10 @@ import {
 } from "../callbacks/manager.js";
 import type { RunnableConfig } from "../runnables/config.js";
 import type { BaseCache } from "../caches/base.js";
-import { StructuredToolInterface } from "../tools/index.js";
+import {
+  StructuredToolInterface,
+  StructuredToolParams,
+} from "../tools/index.js";
 import {
   Runnable,
   RunnableLambda,
@@ -123,6 +126,14 @@ export type LangSmithParams = {
   ls_stop?: Array<string>;
 };
 
+export type BindToolsInput =
+  | StructuredToolInterface
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | Record<string, any>
+  | ToolDefinition
+  | RunnableToolLike
+  | StructuredToolParams;
+
 /**
  * Base class for chat models. It extends the BaseLanguageModel class and
  * provides methods for generating chat based on input messages.
@@ -168,12 +179,7 @@ export abstract class BaseChatModel<
    * @param kwargs Any additional parameters to bind.
    */
   bindTools?(
-    tools: (
-      | StructuredToolInterface
-      | Record<string, unknown>
-      | ToolDefinition
-      | RunnableToolLike
-    )[],
+    tools: BindToolsInput[],
     kwargs?: Partial<CallOptions>
   ): Runnable<BaseLanguageModelInput, OutputMessageType, CallOptions>;
 
@@ -258,6 +264,10 @@ export abstract class BaseChatModel<
           callOptions,
           runManagers?.[0]
         )) {
+          if (chunk.message.id == null) {
+            const runId = runManagers?.at(0)?.runId;
+            if (runId != null) chunk.message._updateId(`run-${runId}`);
+          }
           chunk.message.response_metadata = {
             ...chunk.generationInfo,
             ...chunk.message.response_metadata,
@@ -356,6 +366,10 @@ export abstract class BaseChatModel<
         );
         let aggregated;
         for await (const chunk of stream) {
+          if (chunk.message.id == null) {
+            const runId = runManagers?.at(0)?.runId;
+            if (runId != null) chunk.message._updateId(`run-${runId}`);
+          }
           if (aggregated === undefined) {
             aggregated = chunk;
           } else {
@@ -391,6 +405,10 @@ export abstract class BaseChatModel<
           if (pResult.status === "fulfilled") {
             const result = pResult.value;
             for (const generation of result.generations) {
+              if (generation.message.id == null) {
+                const runId = runManagers?.at(0)?.runId;
+                if (runId != null) generation.message._updateId(`run-${runId}`);
+              }
               generation.message.response_metadata = {
                 ...generation.generationInfo,
                 ...generation.message.response_metadata,

@@ -233,6 +233,15 @@ export interface FunctionDefinition {
    * how to call the function.
    */
   description?: string;
+
+  /**
+   * Whether to enable strict schema adherence when generating the function call. If
+   * set to true, the model will follow the exact schema defined in the `parameters`
+   * field. Only a subset of JSON Schema is supported when `strict` is `true`. Learn
+   * more about Structured Outputs in the
+   * [function calling guide](https://platform.openai.com/docs/guides/function-calling).
+   */
+  strict?: boolean;
 }
 
 export interface ToolDefinition {
@@ -260,7 +269,7 @@ export type StructuredOutputType = z.infer<z.ZodObject<any, any, any, any>>;
 export type StructuredOutputMethodOptions<IncludeRaw extends boolean = false> =
   {
     name?: string;
-    method?: "functionCalling" | "jsonMode";
+    method?: "functionCalling" | "jsonMode" | "jsonSchema" | string;
     includeRaw?: IncludeRaw;
   };
 
